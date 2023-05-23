@@ -162,13 +162,15 @@ func (c *GB28181Config) OnMessage(req sip.Request, tx sip.ServerTransaction) {
 		temp := &struct {
 			XMLName      xml.Name
 			CmdType      string
+			SN           int
 			DeviceID     string
 			DeviceName   string
 			Manufacturer string
 			Model        string
 			Channel      string
 			DeviceList   []*Channel `xml:"DeviceList>Item"`
-			RecordList   []*Record  `xml:"RecordList>Item"`
+			SumNum       int
+			RecordList   []*Record `xml:"RecordList>Item"`
 		}{}
 		decoder := xml.NewDecoder(bytes.NewReader([]byte(req.Body())))
 		decoder.CharsetReader = charset.NewReaderLabel
@@ -203,7 +205,7 @@ func (c *GB28181Config) OnMessage(req sip.Request, tx sip.ServerTransaction) {
 		case "Catalog":
 			d.UpdateChannels(temp.DeviceList)
 		case "RecordInfo":
-			d.UpdateRecord(temp.DeviceID, temp.RecordList)
+			d.UpdateRecord(temp.DeviceID, temp.SN, temp.SumNum, temp.RecordList)
 		case "DeviceInfo":
 			// 主设备信息
 			d.Name = temp.DeviceName

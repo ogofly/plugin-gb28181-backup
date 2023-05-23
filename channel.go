@@ -140,7 +140,7 @@ func (channel *Channel) CreateRequst(Method sip.RequestMethod) (req sip.Request)
 	req.SetDestination(d.NetAddr)
 	return req
 }
-func (channel *Channel) QueryRecord(startTime, endTime string) int {
+func (channel *Channel) QueryRecord(startTime, endTime string) ([]*Record, error) {
 	d := channel.device
 	channel.RecordStartTime = startTime
 	channel.RecordEndTime = endTime
@@ -161,11 +161,33 @@ func (channel *Channel) QueryRecord(startTime, endTime string) int {
 		<Type>all</Type>
 		</Query>`, d.sn, channel.DeviceID, startTime, endTime)
 	request.SetBody(body, true)
+
+	ch := make(chan records)
+	RecordCache.SubscribeOnce(d.ID, channel.DeviceID, d.sn, subscriber{
+		startTime: time.Now(),
+		timeout:   time.Second * 3,
+		callback: func(r records) {
+			select {
+			case ch <- r:
+				break
+			case <-time.After(time.Second):
+				log.Error("record info can not publish to channel cause it may be expired")
+			}
+		},
+	})
 	resp, err := d.SipRequestForResponse(request)
 	if err != nil {
-		return http.StatusRequestTimeout
+		return nil, fmt.Errorf("query error: %s", err)
 	}
-	return int(resp.StatusCode())
+	if resp.StatusCode() != 200 {
+		return nil, fmt.Errorf("query error, status=%d", resp.StatusCode())
+	}
+	select {
+	case r := <-ch:
+		return r.list, nil
+	case <-time.After(time.Second * 10):
+		return nil, fmt.Errorf("query timeout")
+	}
 }
 func (channel *Channel) Control(PTZCmd string) int {
 	d := channel.device

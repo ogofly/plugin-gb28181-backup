@@ -29,7 +29,14 @@ func (c *GB28181Config) API_records(w http.ResponseWriter, r *http.Request) {
 	startTime := r.URL.Query().Get("startTime")
 	endTime := r.URL.Query().Get("endTime")
 	if c := FindChannel(id, channel); c != nil {
-		w.WriteHeader(c.QueryRecord(startTime, endTime))
+		util.ReturnJson(func() any {
+			res, err := c.QueryRecord(startTime, endTime)
+			if err == nil {
+				return res
+			} else {
+				return err
+			}
+		}, time.Second*6, w, r)
 	} else {
 		http.NotFound(w, r)
 	}

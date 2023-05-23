@@ -67,9 +67,9 @@ type Device struct {
 		Timeout time.Time
 	}
 	lastSyncTime time.Time
-	GpsTime      time.Time //gps时间
-	Longitude    string    //经度
-	Latitude     string    //纬度
+	GpsTime      time.Time
+	Longitude    string
+	Latitude     string
 	*log.Logger  `json:"-" yaml:"-"`
 }
 
@@ -268,10 +268,14 @@ func (d *Device) UpdateChannels(list []*Channel) {
 		}
 	}
 }
-func (d *Device) UpdateRecord(channelId string, list []*Record) {
+func (d *Device) UpdateRecord(channelId string, sn int, sum int, list []*Record) {
+	RecordCache.Put(d.ID, channelId, sn, sum, list)
 	d.channelMap.Range(func(key, value any) bool {
-		c := value.(*Channel)
-		c.Records = append(c.Records, list...)
+		if key == channelId {
+			c := value.(*Channel)
+			c.Records = append(c.Records, list...)
+			return false
+		}
 		return true
 	})
 }
