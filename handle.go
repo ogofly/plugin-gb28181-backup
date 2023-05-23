@@ -186,7 +186,7 @@ func (c *GB28181Config) OnMessage(req sip.Request, tx sip.ServerTransaction) {
 		case "Keepalive":
 			d.LastKeepaliveAt = time.Now()
 			//callID !="" 说明是订阅的事件类型信息
-			if d.lastSyncTime.IsZero() {
+			if d.lastSyncTime.IsZero() || time.Since(d.lastSyncTime) > time.Second*60 {
 				go d.syncChannels()
 			} else {
 				d.channelMap.Range(func(key, value interface{}) bool {
