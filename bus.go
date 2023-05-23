@@ -2,12 +2,8 @@ package gb28181
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"time"
-
-	"net/http"
-	_ "net/http/pprof"
 
 	"go.uber.org/zap"
 )
@@ -42,9 +38,6 @@ func NewRecordCache() *recordCache {
 		subscribers: make(map[string]subscriber),
 	}
 	go c.watchTimeout()
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
 	return c
 }
 
